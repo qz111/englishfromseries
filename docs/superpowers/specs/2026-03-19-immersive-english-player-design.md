@@ -69,7 +69,7 @@ All heavy tasks (FFmpeg, API calls) run in the main process and are fully async.
 **Step 2 — Choose diagnosis type:**
 - **Pronunciation** — no word selection needed; flags the full sentence for audio loop review. No LLM call.
 - **Vocabulary** — requires word selection; LLM explains the word in the context of the current sentence only.
-- **Slang / Idiom** — requires phrase selection; LLM explains with the previous sentence + current sentence + next sentence as context.
+- **Slang / Idiom** — requires phrase selection; LLM explains with the previous sentence + current sentence + next sentence as context. If the current sentence is the first in the transcript, no previous sentence is included. If it is the last, no next sentence is included.
 
 AI explanation appears inline below the word chips after the API returns.
 
@@ -115,21 +115,40 @@ AI explanation appears inline below the word chips after the API returns.
 ```
 
 **Hydration steps:**
-1. **Step 1 (Whisper):** `sentenceId`, `startTime`, `endTime`, `text`, `words[]` populated. `isMarkedByUser: false`, `diagnostics: null`.
+1. **Step 1 (Whisper):** `sentenceId`, `startTime`, `endTime`, `text`, `words[]` populated. `isMarkedByUser: false`, `diagnostics: { pronunciationFlagged: false, vocabularyQueries: [] }`.
 2. **Step 2 (user marks):** `isMarkedByUser` flips to `true`. Auto-saved immediately.
-3. **Step 3 (diagnosis):** `diagnostics` object populated. Auto-saved after each LLM result.
+3. **Step 3 (diagnosis):** `diagnostics.pronunciationFlagged` set to `true`, or a new entry pushed to `diagnostics.vocabularyQueries`. Auto-saved after each mutation.
+
+`diagnostics` is always an object (never null) from Step 1 onward. The `type` field in `vocabularyQueries` is either `"vocabulary"` or `"slang"` — slang and idiom are treated as the same category.
 
 ---
 
 ## 6. Session Persistence
 
-The session JSON file is the single source of truth. It is stored alongside the video file (or in a configurable sessions folder).
+The session JSON file is the single source of truth.
+
+**Filename convention:** `<video-filename>.session.json`, stored in the same directory as the video file. Example: `friends-s01e01.mp4` → `friends-s01e01.mp4.session.json`.
 
 **On video open:**
-- If a session file exists for this video path → load from disk, skip FFmpeg and Whisper, jump directly to Review Mode.
-- If no session file → run FFmpeg + Whisper, create session file, start in Watch Mode.
+- If `<video>.session.json` exists → load from disk, skip FFmpeg and Whisper, jump directly to Review Mode. No API calls made.
+- If no session file → run FFmpeg + Whisper. Only write the session file to disk after Whisper returns successfully. Start in Watch Mode. A failed Whisper call leaves no partial file on disk.
 
-**Auto-save:** After every state mutation (mark, diagnose, LLM result), the session JSON is written to disk immediately. No manual save required.
+**Auto-save:** After every state mutation (mark, diagnose, LLM result), the session JSON is written to disk. Saves are serialized through a single-writer queue in `SessionStore` to prevent concurrent write collisions. The latest write always wins.
+
+**App settings** (LLM provider choice, API keys) are stored separately in Electron's `app.getPath('userData')/settings.json` — not in the session file. This file is created on first launch with defaults and persists across sessions.
+
+**Settings schema:**
+```json
+{
+  "llmProvider": "openai",
+  "openaiApiKey": "",
+  "anthropicApiKey": "",
+  "whisperApiKey": ""
+}
+```
+`llmProvider` is either `"openai"` or `"anthropic"`. API keys are stored as plain strings (Electron's userData folder is user-scoped; OS-level key storage is deferred to v2).
+
+**Session file atomicity:** Writes use a write-to-temp-then-rename strategy (`session.json.tmp` → `session.json`) to prevent corruption on crash mid-write.
 
 ---
 
@@ -146,15 +165,19 @@ Be concise. Provide one example sentence. English only.
 
 ### Slang / Idiom prompt
 ```
-Previous sentence: "{prevSentence}"
+{if prevSentence} Previous sentence: "{prevSentence}" {/if}
 Current sentence: "{currentSentence}"
-Next sentence: "{nextSentence}"
+{if nextSentence} Next sentence: "{nextSentence}" {/if}
 Selected phrase: "{selectedWord}"
 
 Explain what "{selectedWord}" means in this conversational context, including
 any cultural nuance or idiomatic usage. Be concise. Provide one example sentence.
 English only.
 ```
+
+Previous/next sentence lines are omitted when the current sentence is the first or last in the transcript.
+
+**Prompt injection safety:** Sentence text from Whisper is passed to the LLM via the API's structured message fields (e.g., `role: "user"`, `content: string`), not via string template interpolation. No escaping of `{`, `}`, or quotes is needed because the prompt is built as a plain string concatenation, not a template engine.
 
 ---
 
@@ -174,7 +197,7 @@ English only.
 | Failure | Behavior |
 |---|---|
 | FFmpeg fails | Error dialog with stderr output. Offer retry with different file. Session not created. |
-| Whisper API fails | Inline error in processing UI with Retry button. Session not created until success. |
+| Whisper API fails | Inline error in processing UI with Retry button and a Cancel button. Cancel returns user to the file picker. Session not created until success. |
 | LLM API fails | Inline error in Diagnostic Menu with Retry button. No partial data written. |
 
 All API calls: 30-second timeout, async, main process only.
@@ -187,6 +210,8 @@ All API calls: 30-second timeout, async, main process only.
 |---|---|
 | Space | Play / Pause |
 | R | Mark current sentence as confusing |
+
+Additional hotkeys (seek, playback speed, settings, export) are deferred to v2.
 
 ---
 
