@@ -6,6 +6,7 @@ import { Session, AppSettings, LLMRequest } from '../../types/transcript';
 import { FFmpegService } from '../services/FFmpegService';
 import { WhisperService } from '../services/WhisperService';
 import { LLMService } from '../services/LLMService';
+import { ExportService } from '../services/ExportService';
 
 const sessionStore = new SessionStore();
 
@@ -45,9 +46,9 @@ export function registerHandlers(mainWindow: BrowserWindow): void {
     return llmService.explain(req, settings);
   });
 
-  ipcMain.handle(IPC.EXPORT_SESSION, async () => {
-    // Placeholder — implemented in Task 14 (ExportService)
-    throw new Error('ExportService not yet implemented');
+  ipcMain.handle(IPC.EXPORT_SESSION, async (_e, session: Session, format: 'markdown' | 'pdf') => {
+    const exportService = new ExportService();
+    return exportService.export(session, format);
   });
 
   ipcMain.handle(IPC.GET_SETTINGS, async () => loadSettings());
