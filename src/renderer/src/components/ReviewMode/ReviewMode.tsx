@@ -4,6 +4,7 @@ import { useTranscriptStore } from '../../../store/transcriptStore';
 import { VideoPlayer, VideoPlayerHandle } from '../WatchMode/VideoPlayer';
 import { TranscriptPanel } from './TranscriptPanel';
 import { Sentence } from '../../../../types/transcript';
+import { DiagnosticMenu } from './DiagnosticMenu';
 
 export function ReviewMode() {
   const { session, setMode } = useTranscriptStore();
@@ -52,20 +53,12 @@ export function ReviewMode() {
         </div>
       </div>
 
-      {/* Diagnostic Menu placeholder — Task 13 */}
       {selected && (
-        <div
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
-          onClick={() => setSelected(null)}
-        >
-          <div
-            style={{ background: '#1e293b', borderRadius: 12, padding: 24, color: '#94a3b8', fontSize: 14 }}
-            onClick={(e) => e.stopPropagation()}
-          >
-            Diagnostic Menu coming in Task 13 — sentence: "{selected.text}"
-            <br /><button onClick={() => setSelected(null)} style={{ marginTop: 12, background: 'transparent', border: '1px solid #334155', color: '#94a3b8', padding: '4px 12px', borderRadius: 6, cursor: 'pointer' }}>Close</button>
-          </div>
-        </div>
+        <DiagnosticMenu
+          sentence={selected}
+          transcript={session.transcript}
+          onClose={() => setSelected(null)}
+        />
       )}
     </div>
   );
