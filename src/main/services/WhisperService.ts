@@ -12,12 +12,15 @@ export class WhisperService {
 
     onProgress(0.1);
 
-    const response = await client.audio.transcriptions.create({
-      file: fs.createReadStream(audioPath),
-      model: 'whisper-1',
-      response_format: 'verbose_json',
-      timestamp_granularities: ['segment', 'word'],
-    });
+    const response = await client.audio.transcriptions.create(
+      {
+        file: fs.createReadStream(audioPath),
+        model: 'whisper-1',
+        response_format: 'verbose_json',
+        timestamp_granularities: ['segment', 'word'],
+      },
+      { signal: AbortSignal.timeout(30_000) }
+    );
 
     onProgress(0.9);
 

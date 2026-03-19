@@ -4,7 +4,8 @@ export function ProcessingScreen() {
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    window.api.onTranscriptionProgress((p) => setProgress(Math.round(p * 100)));
+    const removeListener = window.api.onTranscriptionProgress((p) => setProgress(Math.round(p * 100)));
+    return removeListener;
   }, []);
 
   return (

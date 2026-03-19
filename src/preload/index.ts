@@ -27,7 +27,9 @@ contextBridge.exposeInMainWorld('api', {
   saveSettings: (settings: AppSettings): Promise<void> =>
     ipcRenderer.invoke(IPC.SAVE_SETTINGS, settings),
 
-  onTranscriptionProgress: (cb: (progress: number) => void): void => {
-    ipcRenderer.on(IPC.TRANSCRIPTION_PROGRESS, (_e, p) => cb(p));
+  onTranscriptionProgress: (cb: (progress: number) => void): (() => void) => {
+    const listener = (_e: Electron.IpcRendererEvent, p: number) => cb(p);
+    ipcRenderer.on(IPC.TRANSCRIPTION_PROGRESS, listener);
+    return () => ipcRenderer.removeListener(IPC.TRANSCRIPTION_PROGRESS, listener);
   },
 });

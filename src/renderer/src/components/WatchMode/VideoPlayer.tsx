@@ -3,6 +3,7 @@ import { forwardRef, useImperativeHandle, useRef } from 'react';
 
 export interface VideoPlayerHandle {
   currentTime: () => number;
+  togglePlay: () => void;
 }
 
 interface Props {
@@ -14,6 +15,11 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(({ videoPath }, 
 
   useImperativeHandle(ref, () => ({
     currentTime: () => videoRef.current?.currentTime ?? 0,
+    togglePlay: () => {
+      const v = videoRef.current;
+      if (!v) return;
+      if (v.paused) v.play().catch(() => {}); else v.pause();
+    },
   }));
 
   return (

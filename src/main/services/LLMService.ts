@@ -30,23 +30,31 @@ export class LLMService {
   async explain(req: LLMRequest, settings: AppSettings): Promise<string> {
     const prompt = this.buildPrompt(req);
 
+    const timeout = AbortSignal.timeout(30_000);
+
     if (settings.llmProvider === 'openai') {
       const client = new OpenAI({ apiKey: settings.openaiApiKey });
-      const response = await client.chat.completions.create({
-        model: 'gpt-4o',
-        messages: [{ role: 'user', content: prompt }],
-        max_tokens: 300,
-      });
+      const response = await client.chat.completions.create(
+        {
+          model: 'gpt-4o',
+          messages: [{ role: 'user', content: prompt }],
+          max_tokens: 300,
+        },
+        { signal: timeout }
+      );
       return response.choices[0].message.content ?? '';
     }
 
     // anthropic
     const client = new Anthropic({ apiKey: settings.anthropicApiKey });
-    const response = await client.messages.create({
-      model: 'claude-sonnet-4-6',
-      max_tokens: 300,
-      messages: [{ role: 'user', content: prompt }],
-    });
+    const response = await client.messages.create(
+      {
+        model: 'claude-sonnet-4-6',
+        max_tokens: 300,
+        messages: [{ role: 'user', content: prompt }],
+      },
+      { signal: timeout }
+    );
     const block = response.content[0];
     return block.type === 'text' ? block.text : '';
   }

@@ -11,6 +11,7 @@ interface Props {
 
 export function DiagnosticMenu({ sentence, transcript, onClose }: Props) {
   const { flagPronunciation, addVocabularyQuery, session } = useTranscriptStore();
+  const liveSentence = session?.transcript.find((s) => s.sentenceId === sentence.sentenceId);
   const [selectedWord, setSelectedWord] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -68,7 +69,7 @@ export function DiagnosticMenu({ sentence, transcript, onClose }: Props) {
     onClose();
   }
 
-  const existingQueries = sentence.diagnostics.vocabularyQueries;
+  const existingQueries = (liveSentence ?? sentence).diagnostics.vocabularyQueries;
 
   return (
     <div

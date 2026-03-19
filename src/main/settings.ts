@@ -24,5 +24,8 @@ export async function loadSettings(): Promise<AppSettings> {
 }
 
 export async function saveSettings(settings: AppSettings): Promise<void> {
-  await fs.writeFile(settingsPath(), JSON.stringify(settings, null, 2), 'utf-8');
+  const target = settingsPath();
+  const tmp = target + '.tmp';
+  await fs.writeFile(tmp, JSON.stringify(settings, null, 2), 'utf-8');
+  await fs.rename(tmp, target);
 }

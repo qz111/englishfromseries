@@ -13,7 +13,7 @@ declare global {
       exportSession: (session: Session, format: 'markdown' | 'pdf') => Promise<string>;
       getSettings: () => Promise<AppSettings>;
       saveSettings: (settings: AppSettings) => Promise<void>;
-      onTranscriptionProgress: (cb: (progress: number) => void) => void;
+      onTranscriptionProgress: (cb: (progress: number) => void) => (() => void);
     };
   }
 }

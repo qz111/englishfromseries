@@ -23,7 +23,13 @@ export function WatchMode() {
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
-      if (e.key === 'r' || e.key === 'R') handleMark();
+      if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
+      if (e.key === 'r' || e.key === 'R') {
+        handleMark();
+      } else if (e.key === ' ') {
+        e.preventDefault();
+        videoRef.current?.togglePlay();
+      }
     }
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);

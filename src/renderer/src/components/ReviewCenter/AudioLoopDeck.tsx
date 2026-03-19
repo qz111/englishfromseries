@@ -28,7 +28,10 @@ export function AudioLoopDeck({ sentences, videoPath }: Props) {
     }
 
     video.addEventListener('timeupdate', handleTimeUpdate);
-    return () => video.removeEventListener('timeupdate', handleTimeUpdate);
+    return () => {
+      video.pause();
+      video.removeEventListener('timeupdate', handleTimeUpdate);
+    };
   }, [index, current]);
 
   if (sentences.length === 0) {

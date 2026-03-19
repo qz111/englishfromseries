@@ -1,4 +1,5 @@
 import { ipcMain, dialog, BrowserWindow } from 'electron';
+import fs from 'fs/promises';
 import { IPC } from './channels';
 import { SessionStore } from '../services/SessionStore';
 import { loadSettings, saveSettings } from '../settings';
@@ -9,6 +10,10 @@ import { LLMService } from '../services/LLMService';
 import { ExportService } from '../services/ExportService';
 
 const sessionStore = new SessionStore();
+const ffmpegService = new FFmpegService();
+const whisperService = new WhisperService();
+const llmService = new LLMService();
+const exportService = new ExportService();
 
 export function registerHandlers(mainWindow: BrowserWindow): void {
   ipcMain.handle(IPC.OPEN_VIDEO_DIALOG, async () => {
@@ -29,25 +34,25 @@ export function registerHandlers(mainWindow: BrowserWindow): void {
 
   ipcMain.handle(IPC.START_TRANSCRIPTION, async (_e, videoPath: string) => {
     const settings = await loadSettings();
-    const ffmpegService = new FFmpegService();
-    const whisperService = new WhisperService();
     const audioPath = await ffmpegService.extractAudio(videoPath);
-    const sentences = await whisperService.transcribe(
-      audioPath,
-      settings.whisperApiKey,
-      (p) => mainWindow.webContents.send(IPC.TRANSCRIPTION_PROGRESS, p)
-    );
-    return sentences;
+    try {
+      const sentences = await whisperService.transcribe(
+        audioPath,
+        settings.whisperApiKey,
+        (p) => mainWindow.webContents.send(IPC.TRANSCRIPTION_PROGRESS, p)
+      );
+      return sentences;
+    } finally {
+      fs.unlink(audioPath).catch(() => {});
+    }
   });
 
   ipcMain.handle(IPC.CALL_LLM, async (_e, req: LLMRequest) => {
-    const llmService = new LLMService();
     const settings = await loadSettings();
     return llmService.explain(req, settings);
   });
 
   ipcMain.handle(IPC.EXPORT_SESSION, async (_e, session: Session, format: 'markdown' | 'pdf') => {
-    const exportService = new ExportService();
     return exportService.export(session, format);
   });
 
