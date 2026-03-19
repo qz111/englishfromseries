@@ -3,6 +3,7 @@ import { LandingScreen } from './components/LandingScreen';
 import { ProcessingScreen } from './components/ProcessingScreen';
 import { WatchMode } from './components/WatchMode/WatchMode';
 import { ReviewMode } from './components/ReviewMode/ReviewMode';
+import { ReviewCenter } from './components/ReviewCenter/ReviewCenter';
 
 export default function App() {
   const mode = useTranscriptStore((s) => s.mode);
@@ -13,7 +14,7 @@ export default function App() {
       {mode === 'processing' && <ProcessingScreen />}
       {mode === 'watch' && <WatchMode />}
       {mode === 'review' && <ReviewMode />}
-      {mode === 'review-center' && <div style={{ padding: 32, color: '#94a3b8' }}>Review Center — coming in Task 14</div>}
+      {mode === 'review-center' && <ReviewCenter />}
     </div>
   );
 }
