@@ -3,6 +3,8 @@ import { IPC } from './channels';
 import { SessionStore } from '../services/SessionStore';
 import { loadSettings, saveSettings } from '../settings';
 import { Session, AppSettings } from '../../types/transcript';
+import { FFmpegService } from '../services/FFmpegService';
+import { WhisperService } from '../services/WhisperService';
 
 const sessionStore = new SessionStore();
 
@@ -23,9 +25,17 @@ export function registerHandlers(mainWindow: BrowserWindow): void {
     sessionStore.save(session);
   });
 
-  ipcMain.handle(IPC.START_TRANSCRIPTION, async () => {
-    // Placeholder — implemented in Task 8 (WhisperService)
-    throw new Error('WhisperService not yet implemented');
+  ipcMain.handle(IPC.START_TRANSCRIPTION, async (_e, videoPath: string) => {
+    const settings = await loadSettings();
+    const ffmpegService = new FFmpegService();
+    const whisperService = new WhisperService();
+    const audioPath = await ffmpegService.extractAudio(videoPath);
+    const sentences = await whisperService.transcribe(
+      audioPath,
+      settings.whisperApiKey,
+      (p) => mainWindow.webContents.send(IPC.TRANSCRIPTION_PROGRESS, p)
+    );
+    return sentences;
   });
 
   ipcMain.handle(IPC.CALL_LLM, async () => {
