@@ -2,9 +2,10 @@ import { ipcMain, dialog, BrowserWindow } from 'electron';
 import { IPC } from './channels';
 import { SessionStore } from '../services/SessionStore';
 import { loadSettings, saveSettings } from '../settings';
-import { Session, AppSettings } from '../../types/transcript';
+import { Session, AppSettings, LLMRequest } from '../../types/transcript';
 import { FFmpegService } from '../services/FFmpegService';
 import { WhisperService } from '../services/WhisperService';
+import { LLMService } from '../services/LLMService';
 
 const sessionStore = new SessionStore();
 
@@ -38,9 +39,10 @@ export function registerHandlers(mainWindow: BrowserWindow): void {
     return sentences;
   });
 
-  ipcMain.handle(IPC.CALL_LLM, async () => {
-    // Placeholder — implemented in Task 9 (LLMService)
-    throw new Error('LLMService not yet implemented');
+  ipcMain.handle(IPC.CALL_LLM, async (_e, req: LLMRequest) => {
+    const llmService = new LLMService();
+    const settings = await loadSettings();
+    return llmService.explain(req, settings);
   });
 
   ipcMain.handle(IPC.EXPORT_SESSION, async () => {
