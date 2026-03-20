@@ -37,13 +37,23 @@ ReviewMode
 
 ### `VideoPlayer`
 
-**Handle interface** — add one method:
+**Handle interface** — updated (add `seek`, keep existing methods):
 ```ts
-seek: (time: number) => void
+export interface VideoPlayerHandle {
+  currentTime: () => number;
+  togglePlay: () => void;
+  seek: (time: number) => void;
+}
 ```
-Implementation: sets `videoRef.current.currentTime = time` then calls `.play()`.
+`seek` implementation sets `currentTime` only — it does **not** call `.play()`. The video remains paused or playing in whatever state it was in before the seek, so users can scrub through the transcript without auto-resuming playback.
+```ts
+seek: (time: number) => {
+  if (!videoRef.current) return;
+  videoRef.current.currentTime = time;
+}
+```
 
-**Props** — add one optional callback:
+**Props** — add one optional callback (optional for backward compat with `WatchMode`, which does not need time sync):
 ```ts
 onTimeUpdate?: (time: number) => void
 ```
@@ -75,6 +85,10 @@ const activeSentenceId = useMemo(() => {
 - Defines `handleDiagnose(s: Sentence)` → `setSelected(s)`.
 - Passes both to `TranscriptPanel` along with `activeSentenceId`.
 
+> **Note on reference stability:** The `useMemo` depends on `session.transcript` (the array reference). The Zustand store must return a new array reference when the transcript changes and preserve the same reference when it does not — standard Zustand/Immer behaviour.
+
+> **Note on `endTime`:** `Sentence` has an `endTime` field. We deliberately ignore it as the upper boundary. Using it strictly would cause the highlight to disappear in gaps between subtitles. The "last sentence whose `startTime ≤ currentTime`" heuristic keeps a sentence highlighted until the next one starts — the correct karaoke-style behaviour.
+
 ---
 
 ### `TranscriptPanel`
@@ -90,7 +104,7 @@ interface Props {
 ```
 
 **Row behaviour:**
-- Every row is clickable → `onSeekSentence(s)`.
+- Every row is clickable → `onSeekSentence(s)`. **Breaking change from current code:** the existing `isMarkedByUser` guard on `onClick` must be removed so that all rows trigger seek regardless of marked status.
 - Marked rows (`isMarkedByUser`) render an inline ★ button (right side) → `onDiagnoseSentence(s)`. The button stops click propagation so it doesn't also trigger seek.
 - Active row (`s.sentenceId === activeSentenceId`) gets a distinct highlight: e.g. `background: rgba(99,102,241,0.15)`, left border `#6366f1`.
 
@@ -108,9 +122,12 @@ useEffect(() => {
 }, [activeSentenceId]);
 ```
 
-Each row element registers itself:
+Each row element registers itself, with cleanup on unmount to avoid stale entries:
 ```tsx
-ref={el => { if (el) rowRefs.current.set(s.sentenceId, el); }}
+ref={el => {
+  if (el) rowRefs.current.set(s.sentenceId, el);
+  else rowRefs.current.delete(s.sentenceId);
+}}
 ```
 
 ---
@@ -146,4 +163,4 @@ Sentence row click  →  onSeekSentence(s)  →  videoRef.seek(s.startTime)
 
 - WatchMode transcript sync (separate feature).
 - Touch / mobile interactions.
-- Sentence end-time precision (using next sentence's startTime as boundary is sufficient).
+- Sentence `endTime` as strict upper boundary (see note in ReviewMode section above).
