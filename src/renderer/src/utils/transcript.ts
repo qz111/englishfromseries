@@ -5,6 +5,8 @@ import { Sentence } from '../../../types/transcript';
  * Uses a "karaoke" heuristic: the active sentence is the last one whose startTime
  * is <= currentTime. This keeps a sentence highlighted across subtitle gaps rather
  * than de-highlighting between sentences.
+ * @param sentences - Array of Sentence objects sorted ascending by startTime.
+ * @param currentTime - Current video playback position in seconds.
  */
 export function getActiveSentenceId(
   sentences: Sentence[],
