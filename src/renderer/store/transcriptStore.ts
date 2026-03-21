@@ -6,7 +6,7 @@ interface TranscriptState {
   mode: AppMode;
   loadSession: (session: Session) => void;
   setMode: (mode: AppMode) => void;
-  markSentence: (sentenceId: string) => void;
+  toggleMark: (sentenceId: string) => void;
   flagPronunciation: (sentenceId: string) => void;
   addVocabularyQuery: (sentenceId: string, query: VocabularyQuery) => void;
 }
@@ -18,13 +18,13 @@ export const useTranscriptStore = create<TranscriptState>((set) => ({
   loadSession: (session) => set({ session }),
   setMode: (mode) => set({ mode }),
 
-  markSentence: (sentenceId) =>
+  toggleMark: (sentenceId) =>
     set((state) => ({
       session: state.session
         ? {
             ...state.session,
             transcript: state.session.transcript.map((s) =>
-              s.sentenceId === sentenceId ? { ...s, isMarkedByUser: true } : s
+              s.sentenceId === sentenceId ? { ...s, isMarkedByUser: !s.isMarkedByUser } : s
             ),
           }
         : null,

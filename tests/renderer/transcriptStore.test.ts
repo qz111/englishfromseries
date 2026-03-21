@@ -29,11 +29,19 @@ describe('transcriptStore', () => {
     expect(useTranscriptStore.getState().session).toEqual(session);
   });
 
-  it('marks a sentence', () => {
+  it('toggles a sentence mark on', () => {
     useTranscriptStore.getState().loadSession(makeSession());
-    useTranscriptStore.getState().markSentence('s_001');
+    useTranscriptStore.getState().toggleMark('s_001');
     const s = useTranscriptStore.getState().session!.transcript[0];
     expect(s.isMarkedByUser).toBe(true);
+  });
+
+  it('toggles a sentence mark off', () => {
+    useTranscriptStore.getState().loadSession(makeSession());
+    useTranscriptStore.getState().toggleMark('s_001'); // mark
+    useTranscriptStore.getState().toggleMark('s_001'); // unmark
+    const s = useTranscriptStore.getState().session!.transcript[0];
+    expect(s.isMarkedByUser).toBe(false);
   });
 
   it('flags pronunciation', () => {
