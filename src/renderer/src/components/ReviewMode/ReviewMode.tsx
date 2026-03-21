@@ -8,7 +8,7 @@ import { DiagnosticMenu } from './DiagnosticMenu';
 import { getActiveSentenceId } from '../../utils/transcript';
 
 export function ReviewMode() {
-  const { session, setMode } = useTranscriptStore();
+  const { session, setMode, toggleMark } = useTranscriptStore();
   const videoRef = useRef<VideoPlayerHandle>(null);
   const [selected, setSelected] = useState<Sentence | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
@@ -27,6 +27,12 @@ export function ReviewMode() {
 
   function handleDiagnose(s: Sentence) {
     setSelected(s);
+  }
+
+  function handleToggleMark(s: Sentence) {
+    toggleMark(s.sentenceId);
+    const updated = useTranscriptStore.getState().session;
+    if (updated) window.api.saveSession(updated);
   }
 
   return (
@@ -71,6 +77,7 @@ export function ReviewMode() {
             activeSentenceId={activeSentenceId}
             onSeekSentence={handleSeek}
             onDiagnoseSentence={handleDiagnose}
+            onToggleMark={handleToggleMark}
           />
         </div>
       </div>
