@@ -1,17 +1,32 @@
 // src/renderer/src/components/ReviewMode/ReviewMode.tsx
-import { useRef, useState } from 'react';
+import { useRef, useState, useMemo } from 'react';
 import { useTranscriptStore } from '../../../store/transcriptStore';
 import { VideoPlayer, VideoPlayerHandle } from '../WatchMode/VideoPlayer';
 import { TranscriptPanel } from './TranscriptPanel';
 import { Sentence } from '../../../../types/transcript';
 import { DiagnosticMenu } from './DiagnosticMenu';
+import { getActiveSentenceId } from '../../utils/transcript';
 
 export function ReviewMode() {
   const { session, setMode } = useTranscriptStore();
   const videoRef = useRef<VideoPlayerHandle>(null);
   const [selected, setSelected] = useState<Sentence | null>(null);
+  const [currentTime, setCurrentTime] = useState(0);
+
+  const activeSentenceId = useMemo(
+    () => getActiveSentenceId(session?.transcript ?? [], currentTime),
+    [currentTime, session?.transcript]
+  );
 
   if (!session) return null;
+
+  function handleSeek(s: Sentence) {
+    videoRef.current?.seek(s.startTime);
+  }
+
+  function handleDiagnose(s: Sentence) {
+    setSelected(s);
+  }
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100vh' }}>
@@ -42,13 +57,19 @@ export function ReviewMode() {
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
         {/* Left: video ~55% */}
         <div style={{ width: '55%', background: '#000', flexShrink: 0 }}>
-          <VideoPlayer ref={videoRef} videoPath={session.videoPath} />
+          <VideoPlayer
+            ref={videoRef}
+            videoPath={session.videoPath}
+            onTimeUpdate={setCurrentTime}
+          />
         </div>
         {/* Right: transcript ~45% */}
         <div style={{ flex: 1, borderLeft: '1px solid #1e293b', background: '#0f172a', overflow: 'hidden' }}>
           <TranscriptPanel
             sentences={session.transcript}
-            onClickSentence={(s) => setSelected(s)}
+            activeSentenceId={activeSentenceId}
+            onSeekSentence={handleSeek}
+            onDiagnoseSentence={handleDiagnose}
           />
         </div>
       </div>
