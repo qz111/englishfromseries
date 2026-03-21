@@ -22,6 +22,7 @@ export function DiagnosticMenu({ sentence, transcript, onClose }: Props) {
 
   async function handleVocabulary() {
     if (!selectedWord || !session) return;
+    if (existingQueries.some(q => q.selectedWord === selectedWord && q.type === 'vocabulary')) return;
     setLoading(true);
     setError(null);
     try {
@@ -42,6 +43,7 @@ export function DiagnosticMenu({ sentence, transcript, onClose }: Props) {
 
   async function handleSlang() {
     if (!selectedWord || !session) return;
+    if (existingQueries.some(q => q.selectedWord === selectedWord && q.type === 'slang')) return;
     setLoading(true);
     setError(null);
     try {
@@ -71,6 +73,14 @@ export function DiagnosticMenu({ sentence, transcript, onClose }: Props) {
 
   const existingQueries = (liveSentence ?? sentence).diagnostics.vocabularyQueries;
 
+  function handleTextMouseUp() {
+    const selection = window.getSelection();
+    const text = selection?.toString().trim();
+    if (text) {
+      setSelectedWord(text);
+    }
+  }
+
   return (
     <div
       style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 100 }}
@@ -86,29 +96,52 @@ export function DiagnosticMenu({ sentence, transcript, onClose }: Props) {
           <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 18, lineHeight: 1 }}>×</button>
         </div>
 
-        {/* Word chips */}
+        {/* Selectable sentence */}
         <p style={{ fontSize: 13, color: '#64748b', marginBottom: 8, marginTop: 0 }}>
-          Select a word or phrase, then choose a diagnosis type:
+          Highlight a word or phrase, then choose a diagnosis type:
         </p>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginBottom: 16 }}>
-          {sentence.words.map((w, i) => (
+        <div
+          onMouseUp={handleTextMouseUp}
+          style={{
+            background: '#0f172a',
+            borderRadius: 8,
+            padding: '10px 14px',
+            marginBottom: 8,
+            fontSize: 15,
+            color: '#e2e8f0',
+            lineHeight: 1.7,
+            userSelect: 'text',
+            cursor: 'text',
+          }}
+        >
+          {sentence.text}
+        </div>
+        {selectedWord ? (
+          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <span style={{ fontSize: 12, color: '#64748b' }}>Selected:</span>
             <span
-              key={i}
-              onClick={() => setSelectedWord(selectedWord === w.word ? null : w.word)}
               style={{
-                padding: '3px 8px',
+                background: '#6366f1',
+                color: '#fff',
                 borderRadius: 4,
-                cursor: 'pointer',
-                fontSize: 14,
-                background: selectedWord === w.word ? '#6366f1' : '#0f172a',
-                color: selectedWord === w.word ? '#fff' : '#94a3b8',
-                userSelect: 'none',
+                padding: '2px 8px',
+                fontSize: 13,
               }}
             >
-              {w.word}
+              {selectedWord}
             </span>
-          ))}
-        </div>
+            <button
+              onClick={() => setSelectedWord(null)}
+              style={{ background: 'transparent', border: 'none', color: '#64748b', cursor: 'pointer', fontSize: 12, padding: 0 }}
+            >
+              ✕ clear
+            </button>
+          </div>
+        ) : (
+          <p style={{ fontSize: 12, color: '#475569', marginBottom: 16, marginTop: 0 }}>
+            No text selected — drag to highlight a word or phrase above.
+          </p>
+        )}
 
         {/* Three action buttons */}
         <div style={{ display: 'flex', gap: 10, marginBottom: 16, flexWrap: 'wrap' }}>
