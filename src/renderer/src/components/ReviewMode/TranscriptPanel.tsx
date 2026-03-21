@@ -54,18 +54,22 @@ export function TranscriptPanel({
   onToggleMark,
 }: Props) {
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (activeSentenceId) {
-      rowRefs.current.get(activeSentenceId)?.scrollIntoView({
-        block: 'center',
-        behavior: 'smooth',
-      });
-    }
+    if (!activeSentenceId) return;
+    const container = scrollContainerRef.current;
+    const row = rowRefs.current.get(activeSentenceId);
+    if (!container || !row) return;
+    // Use scrollTo on the container directly instead of scrollIntoView so the
+    // scroll is contained within this element and never propagates to ancestors.
+    const targetScrollTop = row.offsetTop - container.clientHeight / 2 + row.clientHeight / 2;
+    container.scrollTo({ top: targetScrollTop, behavior: 'smooth' });
   }, [activeSentenceId]);
 
   return (
     <div
+      ref={scrollContainerRef}
       style={{
         overflowY: 'auto',
         padding: 8,
