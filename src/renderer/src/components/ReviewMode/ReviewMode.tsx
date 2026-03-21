@@ -22,6 +22,7 @@ export function ReviewMode() {
 
   function handleSeek(s: Sentence) {
     videoRef.current?.seek(s.startTime);
+    setCurrentTime(s.startTime);
   }
 
   function handleDiagnose(s: Sentence) {

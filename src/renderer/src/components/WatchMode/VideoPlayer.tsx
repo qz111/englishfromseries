@@ -17,7 +17,6 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(
     const videoRef = useRef<HTMLVideoElement>(null);
 
     const src = `file:///${videoPath.replace(/\\/g, '/')}`;
-    console.log('VideoPlayer src:', src);
 
     useImperativeHandle(ref, () => ({
       currentTime: () => videoRef.current?.currentTime ?? 0,
