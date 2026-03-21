@@ -62,3 +62,4 @@ Unchanged — the LLM is called as before and the result is appended to `vocabul
 - No cross-sentence dedup (each sentence's `vocabularyQueries` is independent)
 - No normalization of selected text (case, whitespace) — exact match only
 - No UI indication that a call was skipped
+- **Rapid double-click race (pre-existing, not introduced here):** If a user clicks Vocabulary twice before the first async call completes and React re-renders the `disabled` state, two identical LLM calls can still fire. The dedup guard only catches duplicates already persisted to `vocabularyQueries`. Closing this would require an in-flight `useRef` guard — out of scope for this iteration.
