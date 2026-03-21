@@ -10,8 +10,10 @@ import { getActiveSentenceId } from '../../utils/transcript';
 export function PlayerView() {
   const { session, mode, setMode, toggleMark } = useTranscriptStore();
   const videoRef = useRef<VideoPlayerHandle>(null);
+  const mainContentRef = useRef<HTMLDivElement>(null);
   const [selected, setSelected] = useState<Sentence | null>(null);
   const [currentTime, setCurrentTime] = useState(0);
+  const [videoWidthPct, setVideoWidthPct] = useState(65);
 
   const markedCount = session?.transcript.filter((s) => s.isMarkedByUser).length ?? 0;
 
@@ -50,6 +52,23 @@ export function PlayerView() {
     const updated = useTranscriptStore.getState().session;
     if (updated) window.api.saveSession(updated);
   }, [toggleMark]);
+
+  // Drag the divider between video and transcript to resize panels
+  const handleDividerMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    function onMouseMove(ev: MouseEvent) {
+      if (!mainContentRef.current) return;
+      const rect = mainContentRef.current.getBoundingClientRect();
+      const pct = ((ev.clientX - rect.left) / rect.width) * 100;
+      setVideoWidthPct(Math.min(85, Math.max(25, pct)));
+    }
+    function onMouseUp() {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+    }
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  }, []);
 
   // Keyboard handler is mode-agnostic: Space plays/pauses, R marks sentence
   useEffect(() => {
@@ -100,11 +119,11 @@ export function PlayerView() {
       )}
 
       {/* Main content row */}
-      <div style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+      <div ref={mainContentRef} style={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
 
-        {/* Video container — full width in watch, 55% in review */}
+        {/* Video container — full width in watch, user-resizable in review */}
         <div style={{
-          width: isReview ? '55%' : '100%',
+          width: isReview ? `${videoWidthPct}%` : '100%',
           background: '#000',
           flexShrink: 0,
         }}>
@@ -115,12 +134,24 @@ export function PlayerView() {
           />
         </div>
 
+        {/* Draggable divider — only in review mode */}
+        {isReview && (
+          <div
+            onMouseDown={handleDividerMouseDown}
+            style={{
+              width: 4,
+              flexShrink: 0,
+              cursor: 'col-resize',
+              background: '#1e293b',
+            }}
+          />
+        )}
+
         {/* Transcript panel wrapper — hidden in watch mode */}
         {/* display: block (not flex) so TranscriptPanel fills full wrapper width */}
         <div style={{
           display: isReview ? 'block' : 'none',
           flex: 1,
-          borderLeft: '1px solid #1e293b',
           background: '#0f172a',
           overflow: 'hidden',
         }}>
