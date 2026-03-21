@@ -70,6 +70,13 @@ export function PlayerView() {
     document.addEventListener('mouseup', onMouseUp);
   }, []);
 
+  // Pause video when navigating to review-center so it doesn't play in the background
+  useEffect(() => {
+    if (mode === 'review-center') {
+      videoRef.current?.pause();
+    }
+  }, [mode]);
+
   // Keyboard handler is mode-agnostic: Space plays/pauses, R marks sentence
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {

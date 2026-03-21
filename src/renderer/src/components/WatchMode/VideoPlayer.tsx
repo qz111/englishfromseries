@@ -4,6 +4,7 @@ import { forwardRef, useImperativeHandle, useRef } from 'react';
 export interface VideoPlayerHandle {
   currentTime: () => number;
   togglePlay: () => void;
+  pause: () => void;
   seek: (time: number) => void;
 }
 
@@ -24,6 +25,9 @@ export const VideoPlayer = forwardRef<VideoPlayerHandle, Props>(
         const v = videoRef.current;
         if (!v) return;
         if (v.paused) v.play().catch(() => {}); else v.pause();
+      },
+      pause: () => {
+        videoRef.current?.pause();
       },
       seek: (time: number) => {
         if (!videoRef.current) return;

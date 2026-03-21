@@ -11,7 +11,10 @@ export default function App() {
     <div style={{ width: '100vw', height: '100vh', background: '#0f172a', color: '#e2e8f0', overflow: 'hidden' }}>
       {mode === 'landing' && <LandingScreen />}
       {mode === 'processing' && <ProcessingScreen />}
-      {(mode === 'watch' || mode === 'review') && <PlayerView />}
+      {/* PlayerView stays mounted through review-center so video position is preserved */}
+      <div style={{ display: (mode === 'watch' || mode === 'review') ? 'block' : 'none', height: '100%' }}>
+        {(mode === 'watch' || mode === 'review' || mode === 'review-center') && <PlayerView />}
+      </div>
       {mode === 'review-center' && <ReviewCenter />}
     </div>
   );
