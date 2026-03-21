@@ -29,21 +29,28 @@ App.tsx
 ```
 <div style={{ display: flex, flexDirection: column, height: 100vh }}>
   <!-- ReviewMode top bar: display flex when review, none when watch -->
-  <TopBar />
+  <div style={{ display: mode === 'review' ? 'flex' : 'none', ... }}>
+    {/* ← Watch and Review Center buttons */}
+  </div>
 
   <!-- Main content row -->
-  <div style={{ display: flex, flex: 1 }}>
+  <div style={{ display: flex, flex: 1, overflow: hidden }}>
     <!-- Video container: width 100% (watch) or 55% (review) -->
-    <div style={{ width: mode === 'review' ? '55%' : '100%' }}>
-      <VideoPlayer ref={videoRef} ... />   ← single instance, always mounted
+    <div style={{ width: mode === 'review' ? '55%' : '100%', background: '#000', flexShrink: 0 }}>
+      <VideoPlayer ref={videoRef} onTimeUpdate={setCurrentTime} />   ← single instance, always mounted
     </div>
 
-    <!-- Transcript panel: display block when review, none when watch -->
-    <TranscriptPanel style={{ display: mode === 'review' ? ... : 'none' }} />
+    <!-- Transcript panel wrapper: display flex when review, none when watch -->
+    <!-- NOTE: display toggling is on the wrapper div, not on TranscriptPanel (which has no style prop) -->
+    <div style={{ display: mode === 'review' ? 'flex' : 'none', flex: 1, borderLeft: '1px solid #1e293b', background: '#0f172a', overflow: hidden }}>
+      <TranscriptPanel ... />
+    </div>
   </div>
 
   <!-- WatchMode bottom toolbar: display flex when watch, none when review -->
-  <WatchToolbar />
+  <div style={{ display: mode === 'watch' ? 'flex' : 'none', ... }}>
+    {/* ← marked count label + MARK [R] button + Review → button */}
+  </div>
 </div>
 ```
 
@@ -52,9 +59,12 @@ The `<VideoPlayer>` (and the underlying `<video>` element) is never unmounted. W
 ### State
 
 - `videoRef: RefObject<VideoPlayerHandle>` — owned by `PlayerView`, passed to child chrome components as needed
-- `currentTime: number` — local state in `PlayerView`, updated via `onTimeUpdate`; drives `activeSentenceId` for transcript highlighting (currently owned by `ReviewMode`)
+- `currentTime: number` — local state in `PlayerView`, updated via `onTimeUpdate`; drives `activeSentenceId` for transcript highlighting. `onTimeUpdate={setCurrentTime}` is always wired to `<VideoPlayer>` regardless of mode, so `activeSentenceId` is accurate the moment the user switches to review.
 - `selected: Sentence | null` — local state for the DiagnosticMenu popover (currently owned by `ReviewMode`)
+- `markedCount` — derived constant (not state), computed inline as `session.transcript.filter(s => s.isMarkedByUser).length`; used by the WatchMode bottom toolbar
 - No changes to `transcriptStore`
+
+**Seek pattern:** `handleSeek(sentence)` calls both `videoRef.current.seek(sentence.startTime)` and `setCurrentTime(sentence.startTime)` directly. The manual `setCurrentTime` call is required to avoid a one-tick lag before the next `timeupdate` event fires, which would otherwise delay transcript scroll-to-active.
 
 ### Keyboard handler
 
@@ -83,3 +93,4 @@ The `keydown` listener (Space = toggle play, R = mark sentence) currently lives 
 - Switching from Watch → Review and back preserves `currentTime` with no visible seek or flash
 - Paused/playing state is preserved across the switch
 - Marking sentences, transcript highlighting, and DiagnosticMenu all work correctly in their respective modes
+- Pressing R in review mode marks the currently-playing sentence (keyboard handler is mode-agnostic in PlayerView)
