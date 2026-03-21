@@ -4,7 +4,7 @@ import { useTranscriptStore } from '../../../store/transcriptStore';
 import { VideoPlayer, VideoPlayerHandle } from './VideoPlayer';
 
 export function WatchMode() {
-  const { session, markSentence, setMode } = useTranscriptStore();
+  const { session, toggleMark, setMode } = useTranscriptStore();
   const videoRef = useRef<VideoPlayerHandle>(null);
   const markedCount = session?.transcript.filter((s) => s.isMarkedByUser).length ?? 0;
 
@@ -15,11 +15,11 @@ export function WatchMode() {
       (s) => currentTime >= s.startTime && currentTime <= s.endTime
     );
     if (sentence && !sentence.isMarkedByUser) {
-      markSentence(sentence.sentenceId);
+      toggleMark(sentence.sentenceId);
       const updated = useTranscriptStore.getState().session;
       if (updated) window.api.saveSession(updated);
     }
-  }, [session, markSentence]);
+  }, [session, toggleMark]);
 
   useEffect(() => {
     function onKeyDown(e: KeyboardEvent) {
