@@ -1,8 +1,21 @@
-import { ElectronAPI } from '@electron-toolkit/preload'
+import { ElectronAPI } from '@electron-toolkit/preload';
+import { Session, AppSettings, LLMRequest, Sentence } from '../types/transcript';
 
 declare global {
   interface Window {
-    electron: ElectronAPI
-    api: unknown
+    electron: ElectronAPI;
+    api: {
+      openVideoDialog(): Promise<string | null>;
+      loadSession(videoPath: string): Promise<Session | null>;
+      saveSession(session: Session): Promise<void>;
+      startTranscription(videoPath: string): Promise<Sentence[]>;
+      callLLM(req: LLMRequest): Promise<string>;
+      exportSession(session: Session, format: 'markdown' | 'pdf'): Promise<string>;
+      getSettings(): Promise<AppSettings>;
+      saveSettings(settings: AppSettings): Promise<void>;
+      onTranscriptionProgress(cb: (progress: number) => void): () => void;
+      listSessions(): Promise<{ videoPath: string; exists: boolean }[]>;
+      removeSessionPath(videoPath: string): Promise<void>;
+    };
   }
 }

@@ -32,4 +32,10 @@ contextBridge.exposeInMainWorld('api', {
     ipcRenderer.on(IPC.TRANSCRIPTION_PROGRESS, listener);
     return () => ipcRenderer.removeListener(IPC.TRANSCRIPTION_PROGRESS, listener);
   },
+
+  listSessions: (): Promise<{ videoPath: string; exists: boolean }[]> =>
+    ipcRenderer.invoke(IPC.LIST_SESSIONS),
+
+  removeSessionPath: (videoPath: string): Promise<void> =>
+    ipcRenderer.invoke(IPC.REMOVE_SESSION_PATH, videoPath),
 });

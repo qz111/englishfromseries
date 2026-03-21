@@ -1,4 +1,4 @@
-import { ipcMain, dialog, BrowserWindow } from 'electron';
+import { ipcMain, dialog, BrowserWindow, app } from 'electron';
 import fs from 'fs/promises';
 import { IPC } from './channels';
 import { SessionStore } from '../services/SessionStore';
@@ -9,13 +9,16 @@ import { WhisperService } from '../services/WhisperService';
 import { LLMService } from '../services/LLMService';
 import { ExportService } from '../services/ExportService';
 
-const sessionStore = new SessionStore();
+// Services that don't need app.getPath are still module-level
 const ffmpegService = new FFmpegService();
 const whisperService = new WhisperService();
 const llmService = new LLMService();
 const exportService = new ExportService();
 
 export function registerHandlers(mainWindow: BrowserWindow): void {
+  // SessionStore is initialized here (inside app.whenReady) so app.getPath is available
+  const sessionStore = new SessionStore(app.getPath('userData'));
+
   ipcMain.handle(IPC.OPEN_VIDEO_DIALOG, async () => {
     const result = await dialog.showOpenDialog(mainWindow, {
       filters: [{ name: 'Video Files', extensions: ['mp4', 'mkv', 'avi', 'mov', 'webm'] }],
@@ -38,7 +41,7 @@ export function registerHandlers(mainWindow: BrowserWindow): void {
     try {
       const sentences = await whisperService.transcribe(
         audioPath,
-        settings.whisperApiKey,
+        settings.openaiApiKey,
         (p) => mainWindow.webContents.send(IPC.TRANSCRIPTION_PROGRESS, p)
       );
       return sentences;
@@ -59,4 +62,24 @@ export function registerHandlers(mainWindow: BrowserWindow): void {
   ipcMain.handle(IPC.GET_SETTINGS, async () => loadSettings());
 
   ipcMain.handle(IPC.SAVE_SETTINGS, async (_e, settings: AppSettings) => saveSettings(settings));
+
+  ipcMain.handle(IPC.LIST_SESSIONS, async () => {
+    const paths = await sessionStore.listPaths();
+    // Check existence in parallel; reverse so most-recently-saved appears first
+    const results = await Promise.all(
+      paths.map(async (videoPath) => {
+        try {
+          await fs.access(videoPath);
+          return { videoPath, exists: true };
+        } catch {
+          return { videoPath, exists: false };
+        }
+      })
+    );
+    return results.reverse();
+  });
+
+  ipcMain.handle(IPC.REMOVE_SESSION_PATH, async (_e, videoPath: string) => {
+    sessionStore.removePath(videoPath);
+  });
 }

@@ -8,4 +8,6 @@ export const IPC = {
   GET_SETTINGS: 'get-settings',
   SAVE_SETTINGS: 'save-settings',
   TRANSCRIPTION_PROGRESS: 'transcription-progress',
+  LIST_SESSIONS: 'list-sessions',
+  REMOVE_SESSION_PATH: 'remove-session-path',
 } as const;
