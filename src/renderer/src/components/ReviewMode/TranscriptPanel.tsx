@@ -7,6 +7,7 @@ interface Props {
   activeSentenceId?: string;
   onSeekSentence: (s: Sentence) => void;
   onDiagnoseSentence: (s: Sentence) => void;
+  onToggleMark: (s: Sentence) => void;
 }
 
 function sentenceColor(s: Sentence, isActive: boolean): string {
@@ -50,13 +51,14 @@ export function TranscriptPanel({
   activeSentenceId,
   onSeekSentence,
   onDiagnoseSentence,
+  onToggleMark,
 }: Props) {
   const rowRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useEffect(() => {
     if (activeSentenceId) {
       rowRefs.current.get(activeSentenceId)?.scrollIntoView({
-        block: 'nearest',
+        block: 'center',
         behavior: 'smooth',
       });
     }
@@ -114,6 +116,22 @@ export function TranscriptPanel({
             <span style={{ flex: 1 }}>
               {sentenceIcon(s, isActive)}{s.text}
             </span>
+            <button
+              onClick={(e) => { e.stopPropagation(); onToggleMark(s); }}
+              title={s.isMarkedByUser ? 'Remove mark' : 'Add mark'}
+              style={{
+                background: 'transparent',
+                border: 'none',
+                color: s.isMarkedByUser ? '#fbbf24' : '#475569',
+                cursor: 'pointer',
+                fontSize: 12,
+                padding: '1px 4px',
+                flexShrink: 0,
+                lineHeight: 1.4,
+              }}
+            >
+              ⚑
+            </button>
             {s.isMarkedByUser && (
               <button
                 onClick={(e) => {
