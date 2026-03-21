@@ -11,12 +11,13 @@ The hotkey-based marking system in WatchMode is not always perfectly timed. User
 
 ## Scope
 
-Three files change:
+Five files change:
 
 1. `src/renderer/store/transcriptStore.ts` — store action
 2. `src/renderer/src/components/ReviewMode/TranscriptPanel.tsx` — UI + new prop
 3. `src/renderer/src/components/ReviewMode/ReviewMode.tsx` — wiring
 4. `src/renderer/src/components/WatchMode/WatchMode.tsx` — caller update (rename only)
+5. `tests/renderer/transcriptStore.test.ts` — rename `markSentence` call to `toggleMark`; update test description; add a second assertion verifying that calling `toggleMark` a second time sets `isMarkedByUser` back to `false`
 
 ---
 
@@ -101,7 +102,7 @@ const { session, setMode, toggleMark } = useTranscriptStore();
 function handleToggleMark(s: Sentence) {
   toggleMark(s.sentenceId);
   const updated = useTranscriptStore.getState().session;
-  if (updated) window.api.saveSession(updated);
+  if (updated) window.api.saveSession(updated); // fire-and-forget — matches handlePronunciation in DiagnosticMenu; do not add async/await here
 }
 
 // Pass to TranscriptPanel:
@@ -120,5 +121,5 @@ function handleToggleMark(s: Sentence) {
 
 - No changes to WatchMode's visual UI (hotkey marking remains as-is)
 - No changes to DiagnosticMenu
-- No changes to ReviewCenter or ExportService (they read `isMarkedByUser` directly from session data — the toggle doesn't break them)
+- No changes to ReviewCenter or ExportService (they read `isMarkedByUser` directly from session data — the toggle doesn't break them). Note: **unmarking a sentence will also remove it from ExportService output** (ExportService filters on `isMarkedByUser` before building vocabulary/pronunciation sections). This is accepted behavior for this iteration — the user explicitly chose to deactivate that sentence.
 - No new keyboard shortcuts
